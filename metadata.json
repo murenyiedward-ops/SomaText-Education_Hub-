@@ -1,0 +1,7 @@
+{
+  "name": "SomaText Education Hub",
+  "description": "A comprehensive educational platform for teachers and students featuring analytics, lesson libraries, and AI-powered practice quizzes.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
