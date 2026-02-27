@@ -1,0 +1,36 @@
+name: SomaText CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Lint (Type Check)
+        # This uses the "lint" script from your package.json (tsc --noEmit)
+        run: npm run lint
+
+      - name: Build Project
+        # This ensures Vite can successfully bundle your app
+        run: npm run build
+        env:
+          # We provide a dummy key so the build doesn't fail due to missing env vars
+          GEMINI_API_KEY: "dummy_key_for_testing"
+
