@@ -315,11 +315,11 @@ const QuizCenter = () => {
             </div>
             <button 
               onClick={startQuiz}
-              disabled={!topic}
+              disabled={!topic || isOffline}
               className="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-700 disabled:opacity-50 transition-all flex items-center gap-2"
             >
               <Zap className="w-5 h-5" />
-              Generate
+              {isOffline ? 'Offline' : 'Generate'}
             </button>
           </div>
         </Card>
@@ -446,8 +446,22 @@ export default function App() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [stats, setStats] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
   const user = role === 'teacher' ? DEFAULT_TEACHER : DEFAULT_STUDENT;
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const fetchData = async () => {
     setLoadingData(true);
@@ -590,6 +604,21 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-1 lg:ml-64 p-4 md:p-8">
+        {isOffline && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            className="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3 text-amber-800"
+          >
+            <div className="p-2 bg-amber-100 rounded-lg">
+              <Zap className="w-5 h-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="font-bold text-sm">Offline Mode Active</p>
+              <p className="text-xs opacity-80">You're currently offline. You can still browse cached lessons and submissions, but AI features like quiz generation require a connection.</p>
+            </div>
+          </motion.div>
+        )}
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-4">
             <button 
