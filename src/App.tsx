@@ -436,7 +436,24 @@ const AssignmentUpload = ({ submissions, onSubmit }: { submissions: Submission[]
   );
 };
 
-// --- APP STATE & API ---
+// --- APP STATE & LOCAL STORAGE ---
+
+const STORAGE_KEY_SUBMISSIONS = 'somatext_submissions';
+const STORAGE_KEY_LESSONS = 'somatext_lessons';
+
+const INITIAL_LESSONS: Lesson[] = [
+  { id: 'l1', title: 'Human Circulatory System', subject: 'Biology', description: 'Understanding how blood travels through the heart and vessels.' },
+  { id: 'l2', title: 'Calculus: Derivatives', subject: 'Math', description: 'Introduction to the power rule and basic differentiation.' },
+  { id: 'l3', title: 'Organic Chemistry Basics', subject: 'Chemistry', description: 'Carbon bonding and functional groups explained.' },
+];
+
+const INITIAL_STATS = [
+  { name: 'Mon', submissions: 12, average: 78 },
+  { name: 'Tue', submissions: 19, average: 82 },
+  { name: 'Wed', submissions: 15, average: 75 },
+  { name: 'Thu', submissions: 22, average: 88 },
+  { name: 'Fri', submissions: 30, average: 85 },
+];
 
 export default function App() {
   const [role, setRole] = useState<UserRole>('teacher');
@@ -444,7 +461,7 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [stats, setStats] = useState<any[]>([]);
+  const [stats, setStats] = useState<any[]>(INITIAL_STATS);
   const [loadingData, setLoadingData] = useState(true);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
@@ -457,50 +474,49 @@ export default function App() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    // Initialize Data from LocalStorage
+    const savedSubmissions = localStorage.getItem(STORAGE_KEY_SUBMISSIONS);
+    const savedLessons = localStorage.getItem(STORAGE_KEY_LESSONS);
+
+    if (savedSubmissions) {
+      setSubmissions(JSON.parse(savedSubmissions));
+    } else {
+      const initial = [
+        { id: '1', studentName: 'Alex Johnson', assignmentTitle: 'Cell Mitosis Essay', submittedAt: '2024-02-26 14:30', status: 'pending' },
+        { id: '2', studentName: 'Jamie Voe', assignmentTitle: 'Quadratic Equations', submittedAt: '2024-02-26 16:15', status: 'pending' },
+        { id: '3', studentName: 'Sam Lee', assignmentTitle: 'Photosynthesis Lab', submittedAt: '2024-02-25 09:00', status: 'marked', grade: 'A' },
+      ] as Submission[];
+      setSubmissions(initial);
+      localStorage.setItem(STORAGE_KEY_SUBMISSIONS, JSON.stringify(initial));
+    }
+
+    if (savedLessons) {
+      setLessons(JSON.parse(savedLessons));
+    } else {
+      setLessons(INITIAL_LESSONS);
+      localStorage.setItem(STORAGE_KEY_LESSONS, JSON.stringify(INITIAL_LESSONS));
+    }
+
+    setLoadingData(false);
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
-  const fetchData = async () => {
-    setLoadingData(true);
-    try {
-      const [subsRes, lessonsRes, statsRes] = await Promise.all([
-        fetch('/api/submissions'),
-        fetch('/api/lessons'),
-        fetch('/api/stats')
-      ]);
-      const [subs, less, st] = await Promise.all([
-        subsRes.json(),
-        lessonsRes.json(),
-        statsRes.json()
-      ]);
-      setSubmissions(subs);
-      setLessons(less);
-      setStats(st);
-    } catch (err) {
-      console.error("Failed to fetch data", err);
-    } finally {
-      setLoadingData(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
   const handleSubmission = async (title: string) => {
-    try {
-      await fetch('/api/submissions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ studentName: user.name, assignmentTitle: title })
-      });
-      fetchData();
-    } catch (err) {
-      console.error("Failed to submit", err);
-    }
+    const newSubmission: Submission = {
+      id: Date.now().toString(),
+      studentName: user.name,
+      assignmentTitle: title,
+      submittedAt: new Date().toLocaleString(),
+      status: 'pending'
+    };
+    
+    const updated = [newSubmission, ...submissions];
+    setSubmissions(updated);
+    localStorage.setItem(STORAGE_KEY_SUBMISSIONS, JSON.stringify(updated));
   };
 
   const teacherTabs = [
